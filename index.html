@@ -2,41 +2,67 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Restablecer Contraseña - Aeropets</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Restablecer contraseña - Aeropets</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      max-width: 400px;
-      margin: 50px auto;
-      padding: 20px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f8fb;
+      margin: 0; padding: 0; color: #333;
     }
-    input {
+    .container {
+      max-width: 400px;
+      background: #fff;
+      margin: 80px auto;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    h2 {
+      color: #3A8DFF;
+      margin-bottom: 20px;
+    }
+    input[type="password"] {
       width: 100%;
-      padding: 10px;
-      margin: 10px 0;
+      padding: 12px;
+      margin-bottom: 20px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
     }
     button {
       width: 100%;
-      padding: 12px;
-      background: #4CAF50;
-      color: #fff;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      background-color: #3A8DFF;
+      color: white;
       border: none;
+      border-radius: 30px;
       cursor: pointer;
-      border-radius: 4px;
+      box-shadow: 0 4px 8px rgba(58,141,255,0.4);
+      transition: background-color 0.3s ease;
     }
-    button:disabled {
-      background: #888;
+    button:hover {
+      background-color: #2f6fd1;
+    }
+    #message {
+      margin-top: 20px;
+      font-size: 14px;
+      color: red;
+      min-height: 20px;
     }
   </style>
 </head>
 <body>
-  <h2>Restablecer Contraseña</h2>
-  <input type="password" id="new-password" placeholder="Nueva contraseña" />
-  <button id="reset-btn">Cambiar Contraseña</button>
-  <p id="message"></p>
+  <div class="container">
+    <h2>Restablecer contraseña</h2>
+    <input id="new-password" type="password" placeholder="Nueva contraseña" />
+    <button id="reset-btn">Cambiar contraseña</button>
+    <p id="message"></p>
+  </div>
 
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
@@ -44,48 +70,46 @@
     const supabase = createClient(
       'https://bnxxkdselpoegmiqujcq.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJueHhrZHNlbHBvZWdtaXF1amNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0MzQwOTEsImV4cCI6MjA2NzAxMDA5MX0.9JMkkpF8EYgdobCytNAUu-F_YT6-inF1Ld2hnbrCkCc'
-    );
+    )
 
-    const url = new URL(window.location.href);
-    const accessToken = url.searchParams.get('access_token');
-    const type = url.searchParams.get('type');
+    // Leer token desde hash (parte después de #)
+    const hash = window.location.hash.substring(1)
+    const params = new URLSearchParams(hash)
+    const accessToken = params.get('access_token')
 
-    const resetBtn = document.getElementById('reset-btn');
-    const newPassword = document.getElementById('new-password');
-    const message = document.getElementById('message');
+    const messageEl = document.getElementById('message')
+    const btn = document.getElementById('reset-btn')
 
-    async function main() {
-      if (!accessToken) {
-        message.textContent = 'No se encontró token válido.';
-        resetBtn.disabled = true;
-        return;
-      }
-
-      // ⚡ Inicia sesión usando el token
-      const { data, error } = await supabase.auth.exchangeCodeForSession(accessToken);
-      if (error) {
-        message.textContent = 'Token inválido o expirado.';
-        resetBtn.disabled = true;
-        return;
-      }
-
-      resetBtn.addEventListener('click', async () => {
-        resetBtn.disabled = true;
-        message.textContent = 'Actualizando...';
-
-        const { error: updateError } = await supabase.auth.updateUser({
-          password: newPassword.value
-        });
-
-        if (updateError) {
-          message.textContent = 'Error: ' + updateError.message;
-        } else {
-          message.textContent = 'Contraseña cambiada. Ya puedes cerrar esta página.';
-        }
-      });
+    if (!accessToken) {
+      messageEl.style.color = 'red'
+      messageEl.textContent = 'Error: Token no encontrado en la URL.'
+      btn.disabled = true
     }
 
-    main();
+    btn.addEventListener('click', async () => {
+      messageEl.style.color = 'black'
+      messageEl.textContent = 'Actualizando contraseña...'
+      btn.disabled = true
+
+      const newPassword = document.getElementById('new-password').value.trim()
+      if (!newPassword) {
+        messageEl.style.color = 'red'
+        messageEl.textContent = 'Por favor ingresa una nueva contraseña.'
+        btn.disabled = false
+        return
+      }
+
+      const { error } = await supabase.auth.updateUser(accessToken, { password: newPassword })
+
+      if (error) {
+        messageEl.style.color = 'red'
+        messageEl.textContent = 'Error: ' + error.message
+      } else {
+        messageEl.style.color = 'green'
+        messageEl.textContent = '¡Contraseña cambiada con éxito!'
+      }
+      btn.disabled = false
+    })
   </script>
 </body>
 </html>
