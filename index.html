@@ -58,52 +58,48 @@
   <p id="message"></p>
 
   <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-    const supabase = createClient(
-      'https://bnxxkdselpoegmiqujcq.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJueHhrZHNlbHBvZWdtaXF1amNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0MzQwOTEsImV4cCI6MjA2NzAxMDA5MX0.9JMkkpF8EYgdobCytNAUu-F_YT6-inF1Ld2hnbrCkCc'
-    )
+  const supabase = createClient(
+    'https://bnxxkdselpoegmiqujcq.supabase.co',
+    'YOUR_PUBLIC_ANON_KEY'
+  )
 
-    const resetBtn = document.getElementById('reset-btn')
-    const newPassword = document.getElementById('new-password')
-    const message = document.getElementById('message')
+  const url = new URL(window.location.href)
+  const access_token = url.searchParams.get('access_token')
+  const type = url.searchParams.get('type')
 
-    // Obtiene el token de la URL
-    const params = new URLSearchParams(window.location.search)
-    const token = params.get('token')
+  if (type !== 'recovery' || !access_token) {
+    document.getElementById('message').textContent = 'Enlace inválido o expirado.'
+    document.getElementById('reset-btn').disabled = true
+  } else {
+    // Guarda sesión temporal con el token
+    await supabase.auth.setSession({
+      access_token: access_token,
+      refresh_token: '' // no se necesita para recovery
+    })
+  }
 
-    if (!token) {
-      message.textContent = 'El enlace de restablecimiento es inválido o ha expirado.'
-      resetBtn.disabled = true
-      newPassword.disabled = true
+  const resetBtn = document.getElementById('reset-btn')
+  const newPassword = document.getElementById('new-password')
+  const message = document.getElementById('message')
+
+  resetBtn.addEventListener('click', async () => {
+    resetBtn.disabled = true
+    message.textContent = 'Actualizando...'
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword.value
+    })
+
+    if (error) {
+      message.textContent = 'Error: ' + error.message
     } else {
-      resetBtn.disabled = false
+      message.textContent = 'Contraseña cambiada correctamente.'
     }
+  })
+</script>
 
-    // Habilitar botón solo si la contraseña tiene mínimo 6 caracteres
-    newPassword.addEventListener('input', () => {
-      resetBtn.disabled = newPassword.value.length < 6
-      message.textContent = ''
-    })
-
-    resetBtn.addEventListener('click', async () => {
-      resetBtn.disabled = true
-      message.textContent = 'Actualizando contraseña...'
-
-      // Usa el token para actualizar la contraseña
-      const { error } = await supabase.auth.api
-        .resetPasswordForEmail(null, { accessToken: token, password: newPassword.value })
-
-      if (error) {
-        message.textContent = 'Error: ' + error.message
-        resetBtn.disabled = false
-      } else {
-        message.textContent = 'Contraseña cambiada correctamente. Puedes cerrar esta página y volver a iniciar sesión.'
-        newPassword.disabled = true
-      }
-    })
-  </script>
 </body>
 </html>
 
