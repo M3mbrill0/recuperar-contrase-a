@@ -3,103 +3,87 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Restablecer Contraseña - Aeropets</title>
+  <title>Cambiar Contraseña - Aeropets</title>
   <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      max-width: 400px; 
-      margin: 50px auto; 
-      padding: 20px; 
-      border: 1px solid #ddd; 
-      border-radius: 8px; 
-      background-color: #f9f9f9;
-      color: #333;
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 400px;
+      margin: 50px auto;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #f4f8fb;
     }
     h2 {
-      text-align: center;
       color: #3A8DFF;
     }
-    input { 
-      width: 100%; 
-      padding: 12px; 
-      margin: 15px 0; 
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      box-sizing: border-box;
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
     }
-    button { 
-      width: 100%; 
-      padding: 14px; 
-      background: #3A8DFF; 
-      color: #fff; 
-      border: none; 
-      cursor: pointer; 
-      border-radius: 6px; 
-      font-size: 18px;
-      font-weight: bold;
-      transition: background-color 0.3s ease;
-    }
-    button:disabled {
-      background: #999;
-      cursor: not-allowed;
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #3A8DFF;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
     }
     #message {
-      margin-top: 20px;
-      text-align: center;
-      font-weight: 600;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <h2>Restablecer Contraseña</h2>
+  <h2>Elige tu nueva contraseña</h2>
   <input type="password" id="new-password" placeholder="Nueva contraseña" />
-  <button id="reset-btn" disabled>Cambiar Contraseña</button>
+  <button id="reset-btn">Cambiar Contraseña</button>
   <p id="message"></p>
 
   <script type="module">
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-  const supabase = createClient(
-    'https://bnxxkdselpoegmiqujcq.supabase.co',
-    'YOUR_PUBLIC_ANON_KEY'
-  )
+    const supabase = createClient(
+      'https://bnxxkdselpoegmiqujcq.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJueHhrZHNlbHBvZWdtaXF1amNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0MzQwOTEsImV4cCI6MjA2NzAxMDA5MX0.9JMkkpF8EYgdobCytNAUu-F_YT6-inF1Ld2hnbrCkCc'
+    )
 
-  const url = new URL(window.location.href)
-  const access_token = url.searchParams.get('access_token')
-  const type = url.searchParams.get('type')
+    const url = new URL(window.location.href)
+    const access_token = url.searchParams.get('access_token')
+    const type = url.searchParams.get('type')
 
-  if (type !== 'recovery' || !access_token) {
-    document.getElementById('message').textContent = 'Enlace inválido o expirado.'
-    document.getElementById('reset-btn').disabled = true
-  } else {
-    // Guarda sesión temporal con el token
-    await supabase.auth.setSession({
-      access_token: access_token,
-      refresh_token: '' // no se necesita para recovery
-    })
-  }
+    const resetBtn = document.getElementById('reset-btn')
+    const newPassword = document.getElementById('new-password')
+    const message = document.getElementById('message')
 
-  const resetBtn = document.getElementById('reset-btn')
-  const newPassword = document.getElementById('new-password')
-  const message = document.getElementById('message')
-
-  resetBtn.addEventListener('click', async () => {
-    resetBtn.disabled = true
-    message.textContent = 'Actualizando...'
-
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword.value
-    })
-
-    if (error) {
-      message.textContent = 'Error: ' + error.message
-    } else {
-      message.textContent = 'Contraseña cambiada correctamente.'
+    if (!access_token || type !== 'recovery') {
+      message.textContent = 'El enlace es inválido o ha expirado.'
+      resetBtn.disabled = true
     }
-  })
-</script>
 
+    resetBtn.addEventListener('click', async () => {
+      resetBtn.disabled = true
+      message.textContent = 'Actualizando...'
+
+      const { error } = await supabase.auth.setSession({ access_token, refresh_token: '' })
+
+      if (error) {
+        message.textContent = 'Error al establecer sesión: ' + error.message
+        return
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword.value
+      })
+
+      if (updateError) {
+        message.textContent = 'Error: ' + updateError.message
+      } else {
+        message.textContent = 'Contraseña cambiada. Puedes cerrar esta página.'
+      }
+    })
+  </script>
 </body>
 </html>
-
